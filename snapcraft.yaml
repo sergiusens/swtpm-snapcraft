@@ -1,0 +1,35 @@
+name: swtpm-mvo
+version: 0.1.0
+summary:  Libtpms-based TPM emulator
+description: |
+  Libtpms-based TPM emulator with socket, character device, and Linux
+  CUSE interface.
+base: core18
+
+apps:
+  swtpm:
+    command: usr/bin/swtpm
+
+parts:
+  libtpms:
+    source: https://github.com/stefanberger/libtpms.git
+    plugin: autotools
+    configflags:
+      - --with-openssl
+    build-packages:
+      - libnss3-dev
+      - libssl-dev
+      - gawk
+      - libtasn1-dev
+  swtpm:
+    source: https://github.com/stefanberger/swtpm.git
+    plugin: autotools
+    build-packages:
+      - net-tools
+      - expect
+      - socat
+    override-build: |
+      ls ${SNAPCRAFT_PART_INSTALL}/../../libtpms/install
+      CFLAGS="-I${SNAPCRAFT_PART_INSTALL}/../../libtpms/install/include" LDFLAGS="-L${SNAPCRAFT_PART_INSTALL}/../../libtpms/install/lib" PKG_CONFIG_PATH=${SNAPCRAFT_PART_INSTALL}/../../libtpms/install/lib/pkgconfig/ ./autogen.sh --prefix=/usr
+      make
+      make install DESTDIR=$SNAPCRAFT_PART_INSTALL
