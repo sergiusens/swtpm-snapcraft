@@ -5,10 +5,21 @@ description: |
   Libtpms-based TPM emulator with socket, character device, and Linux
   CUSE interface.
 base: core18
+architectures:
+  - build-on: amd64
 
 apps:
   swtpm:
     command: usr/bin/swtpm
+    environment:
+      LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/usr/lib/swtpm/
+  swtpm-sock:
+    command: usr/bin/swtpm socket --tpmstate dir=$SNAP_DATA/swtpm --tpm2 --ctrl type=unixio,path=$SNAP_DATA/swtpm-sock
+    daemon: simple
+    plugs:
+      - network-bind
+    environment:
+      LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/usr/lib/swtpm/
 
 parts:
   libtpms:
@@ -16,11 +27,13 @@ parts:
     plugin: autotools
     configflags:
       - --with-openssl
+      - --with-tpm2
     build-packages:
       - libnss3-dev
       - libssl-dev
       - gawk
       - libtasn1-dev
+      - pkg-config
   swtpm:
     source: https://github.com/stefanberger/swtpm.git
     plugin: autotools
@@ -28,6 +41,7 @@ parts:
       - net-tools
       - expect
       - socat
+      - libseccomp-dev
     override-build: |
       ls ${SNAPCRAFT_PART_INSTALL}/../../libtpms/install
       CFLAGS="-I${SNAPCRAFT_PART_INSTALL}/../../libtpms/install/include" LDFLAGS="-L${SNAPCRAFT_PART_INSTALL}/../../libtpms/install/lib" PKG_CONFIG_PATH=${SNAPCRAFT_PART_INSTALL}/../../libtpms/install/lib/pkgconfig/ ./autogen.sh --prefix=/usr
