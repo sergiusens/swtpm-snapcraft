@@ -16,10 +16,12 @@ apps:
     plugs:
       - network-bind
   swtpm-sock:
-    command: usr/bin/swtpm socket --tpmstate dir=$SNAP_DATA/swtpm --tpm2 --ctrl type=unixio,path=$SNAP_DATA/swtpm-sock
+    command: usr/bin/swtpm socket --tpmstate dir=$SNAP_DATA/ --tpm2 --ctrl type=unixio,path=$SNAP_DATA/swtpm-sock
     daemon: simple
+    restart-condition: always
     plugs:
       - network-bind
+      - home
     environment:
       LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/usr/lib/swtpm/
 
