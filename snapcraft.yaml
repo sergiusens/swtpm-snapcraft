@@ -46,6 +46,6 @@ parts:
       - libseccomp-dev
     override-build: |
       ls ${SNAPCRAFT_PART_INSTALL}/../../libtpms/install
-      CFLAGS="-I${SNAPCRAFT_PART_INSTALL}/../../libtpms/install/include" LDFLAGS="-L${SNAPCRAFT_PART_INSTALL}/../../libtpms/install/lib" PKG_CONFIG_PATH=${SNAPCRAFT_PART_INSTALL}/../../libtpms/install/lib/pkgconfig/ ./autogen.sh --prefix=/usr
+      CFLAGS="-I${SNAPCRAFT_PART_INSTALL}/../../libtpms/install/include" LDFLAGS="-L${SNAPCRAFT_PART_INSTALL}/../../libtpms/install/lib" PKG_CONFIG_PATH=${SNAPCRAFT_PART_INSTALL}/../../libtpms/install/lib/pkgconfig/ ./autogen.sh --prefix=/usr --with-openssl
       make
       make install DESTDIR=$SNAPCRAFT_PART_INSTALL
