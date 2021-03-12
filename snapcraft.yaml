@@ -101,9 +101,6 @@ parts:
       # swtpm needs python 3, so install the cryptography package locally with
       # pip3
       pip3 install cryptography
-      # CFLAGS="-I${SNAPCRAFT_STAGE}/usr/local/include" \
-      #   LDFLAGS="-L${SNAPCRAFT_STAGE}/usr/local/lib" \
-      #   PKG_CONFIG_PATH=${SNAPCRAFT_STAGE}/usr/local/lib/pkgconfig/ \
       ./autogen.sh --prefix=/usr --with-openssl --disable-python-installation
       make
       make install DESTDIR=$SNAPCRAFT_PART_INSTALL
