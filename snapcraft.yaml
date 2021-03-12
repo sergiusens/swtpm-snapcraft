@@ -1,35 +1,66 @@
-name: swtpm-mvo
+name: test-snapd-swtpm
 version: 0.1.0
-summary:  Libtpms-based TPM emulator
+summary: Libtpms-based TPM emulator
 description: |
   Libtpms-based TPM emulator with socket, character device, and Linux
   CUSE interface.
-base: core18
+base: core20
 architectures:
   - build-on: amd64
+
+grade: stable
+confinement: strict
+
+# TODO: enable content interface for sharing the swtpm socket for other strict
+# snaps to consume
+# slots:
+#   swtpm-socket:
+#     interface: content
+#     conent: swtpm-socket
+#     read:
+#       - $SNAP_DATA/swtpm-sock
 
 apps:
   swtpm:
     command: usr/bin/swtpm
     environment:
-      LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/usr/lib/swtpm/
+      LD_LIBRARY_PATH: $SNAP/usr/lib/swtpm/:$SNAP/usr/local/lib/
     plugs:
       - network-bind
   swtpm-sock:
-    command: usr/bin/swtpm socket --tpmstate dir=$SNAP_DATA/ --tpm2 --ctrl type=unixio,path=$SNAP_DATA/swtpm-sock
+    command: usr/bin/swtpm socket --tpmstate $TPMDIR --tpm2 --ctrl $CTRL
     daemon: simple
     restart-condition: always
     plugs:
       - network-bind
       - home
     environment:
-      LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/usr/lib/swtpm/
+      LD_LIBRARY_PATH: $SNAP/usr/lib/swtpm/:$SNAP/usr/local/lib/
+      TPMDIR: dir=$SNAP_DATA
+      CTRL: type=unixio,path=$SNAP_DATA/swtpm-sock
+
+  # TODO: when user daemons are not experimental add this so one can use swtpm
+  # with qemu as non-root user, otherwise one can't install this snap w/o
+  # enabling experimental user daemon support
+  # swtpm-sock-user:
+  #   command: usr/bin/swtpm socket --tpmstate $TPMDIR --tpm2 --ctrl $CTRL
+  #   daemon: simple
+  #   passthrough:
+  #     daemon-scope: user
+  #   restart-condition: always
+  #   plugs:
+  #     - network-bind
+  #     - home
+  #   environment:
+  #     LD_LIBRARY_PATH: $SNAP/usr/lib/swtpm/:$SNAP/usr/local/lib/
+  #     TPMDIR: dir=$SNAP_USER_DATA
+  #     CTRL: type=unixio,path=$SNAP_USER_DATA/swtpm-sock
 
 parts:
   libtpms:
     source: https://github.com/stefanberger/libtpms.git
     plugin: autotools
-    configflags:
+    autotools-configure-parameters:
       - --with-openssl
       - --with-tpm2
     build-packages:
@@ -38,16 +69,41 @@ parts:
       - gawk
       - libtasn1-dev
       - pkg-config
+    stage:
+      - "*"
   swtpm:
+    after: [libtpms]
     source: https://github.com/stefanberger/swtpm.git
     plugin: autotools
     build-packages:
-      - net-tools
+      - libfuse-dev
+      - libglib2.0-dev
+      - libgmp-dev
       - expect
+      - libtasn1-dev
+      - tpm-tools
+      - gnutls-dev
+      - gnutls-bin
+      - python3
+      - python3-pip
+      - net-tools
       - socat
       - libseccomp-dev
+    stage-packages:
+      - libfuse2
+    build-environment:
+      - CFLAGS: -I$SNAPCRAFT_STAGE/usr/local/include
+      - LDFLAGS: -L$SNAPCRAFT_STAGE/usr/local/lib
+      - PKG_CONFIG_PATH: $SNAPCRAFT_STAGE/usr/local/lib/pkgconfig/
+
     override-build: |
-      ls ${SNAPCRAFT_PART_INSTALL}/../../libtpms/install
-      CFLAGS="-I${SNAPCRAFT_PART_INSTALL}/../../libtpms/install/include" LDFLAGS="-L${SNAPCRAFT_PART_INSTALL}/../../libtpms/install/lib" PKG_CONFIG_PATH=${SNAPCRAFT_PART_INSTALL}/../../libtpms/install/lib/pkgconfig/ ./autogen.sh --prefix=/usr --with-openssl
+      # the version of python-cryptography in focal is python 2 based, but 
+      # swtpm needs python 3, so install the cryptography package locally with
+      # pip3
+      pip3 install cryptography
+      # CFLAGS="-I${SNAPCRAFT_STAGE}/usr/local/include" \
+      #   LDFLAGS="-L${SNAPCRAFT_STAGE}/usr/local/lib" \
+      #   PKG_CONFIG_PATH=${SNAPCRAFT_STAGE}/usr/local/lib/pkgconfig/ \
+      ./autogen.sh --prefix=/usr --with-openssl --disable-python-installation
       make
       make install DESTDIR=$SNAPCRAFT_PART_INSTALL
