@@ -75,6 +75,10 @@ parts:
     after: [libtpms]
     source: https://github.com/stefanberger/swtpm.git
     plugin: autotools
+    autotools-configure-parameters:
+      - --prefix=/usr
+      - --with-openssl
+      - --disable-python-installation
     build-packages:
       - libfuse-dev
       - libglib2.0-dev
@@ -86,6 +90,7 @@ parts:
       - gnutls-bin
       - python3
       - python3-pip
+      - python3-cryptography
       - net-tools
       - socat
       - libseccomp-dev
@@ -95,12 +100,3 @@ parts:
       - CFLAGS: -I$SNAPCRAFT_STAGE/usr/local/include
       - LDFLAGS: -L$SNAPCRAFT_STAGE/usr/local/lib
       - PKG_CONFIG_PATH: $SNAPCRAFT_STAGE/usr/local/lib/pkgconfig/
-
-    override-build: |
-      # the version of python-cryptography in focal is python 2 based, but 
-      # swtpm needs python 3, so install the cryptography package locally with
-      # pip3
-      pip3 install cryptography
-      ./autogen.sh --prefix=/usr --with-openssl --disable-python-installation
-      make
-      make install DESTDIR=$SNAPCRAFT_PART_INSTALL
