@@ -60,6 +60,7 @@ parts:
   libtpms:
     source: https://github.com/stefanberger/libtpms.git
     plugin: autotools
+    source-depth: 1
     autotools-configure-parameters:
       - --with-openssl
       - --with-tpm2
@@ -75,6 +76,7 @@ parts:
     after: [libtpms]
     source: https://github.com/stefanberger/swtpm.git
     plugin: autotools
+    source-depth: 1
     autotools-configure-parameters:
       - --prefix=/usr
       - --with-openssl
